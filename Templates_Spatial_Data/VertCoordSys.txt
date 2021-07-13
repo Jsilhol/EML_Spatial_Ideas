@@ -1,0 +1,1 @@
+AltitudeDatumName	AltitudeResolution	AltitudeDistanceUnit	AltitudeEncodingMethod	DepthDatumName	DepthResolution	DepthDatumName	DistanceUnits	DepthEncodingMethod

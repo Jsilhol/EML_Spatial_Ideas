@@ -1,0 +1,1 @@
+GeogCoordSysName	DatumName	SpheroidName	SpheroidSemiAxisMajor	SpheroidDenomFlatRatio	PrimeMeridianName	PrimeMeridianLongitude	UnitName
