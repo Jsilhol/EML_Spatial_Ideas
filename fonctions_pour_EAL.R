@@ -5,56 +5,47 @@ library(EML)
 # set directory
 setwd("C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG/GeoJSON")
 
-# TODO: remettre au clair spatial.path, data.path etc ....
+# This function is only used with vector files
 template_spatial_attributes <- function(
   path, # path to template
-  spatial.path, # path to spatial file
-  name.file #name of spatial file 
+  folder.path, # path to spatial file
+  name.file #name of spatial file
   ){
-
-  # upload file
-  spatial_file <- sf::st_read(spatial.path)
+  # upload vector file
   
-  data.path <- stringr::str_replace(string = spatial.path, 
-                                    pattern = name.file,
-                                    replacement = "")
+  data.path <- paste0(folder.path, "/", name.file)
   
-  # Write new csv file with only data attributes (without geometry info)
+  spatial_file <- sf::st_read(data.path)
   message("Writing data.csv")
   write.csv(x = as.data.frame(x = spatial_file, make.names=FALSE) %>% dplyr::select(-geometry),
-            file = paste0(data.path,"/data.csv"), row.names = FALSE)
-  
+            file = paste0(folder.path,"/data.csv"), row.names = FALSE)
   # Make attributes template 
  
   EMLassemblyline::template_table_attributes(
     path = path,
-    data.path = data.path,
+    data.path = folder.path,
     data.table = "data.csv",
     write.file = TRUE,
     x = NULL)
 }
 
-
+#Test
 template_spatial_attributes(path = "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG/GeoJSON",
-                            spatial.path = "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG/GeoJSON/data_7.GeoJSON",
+                            folder.path = "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG/GeoJSON",
                             name.file = "data_7.GeoJSON")
-
-template_table_attributes(path = "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG", data.path = "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG", data.table = "data.csv")
-
-
 
 
 template_spatial_reference <- function(
-  path, # lieu de création des templates
-  data.path, #path to data directory
+  path, # path to folder where templates will be created
+  folder.path, #path to directory
   file.name, #character, name of data file
   spatial.type # = "vector" or "raster" depending on file, determines how function will read the file
 ){
   #### Notes -----------------------------------------------------------
   # TODO :add reading raster files
   # TODO :validate arguments
-    # valider type du fichier 
-    # valider que path et data.path existent bien
+    # validate file type
+    # validate existence of path and data.path
   # TODO :do VertCoordSys filing part ? or remove it entirely ? don't know where the info is stored
   
   #### copy templates in wd --------------------------------------------
@@ -63,12 +54,10 @@ template_spatial_reference <- function(
   value <- file.copy(from = "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Templates_Spatial_Data/GeogCoordSys.txt", to = paste0(path, "/GeogCoordSys.txt"))
   
   #   Send message
-  # TODO : Si validation des arguments, les templates ne peuvent pas etre copiés seulment parce qu'ils sont déjà présents
-  #         Doc changer le message à "Template ... already exists !"
   if (isTRUE(value)){
     message("GeogCoordSys.txt is now in path")
   } else {
-    message("Was not able to copy GeogCoordSys.txt into directory")
+    message("Template GeogCoordSys.txt already exists !")
   }
 
   # import ProjCoordSys
@@ -77,7 +66,7 @@ template_spatial_reference <- function(
   if (isTRUE(value)){
     message("ProjCoordSys.txt is now in path")
   } else {
-    message("Was not able to copy ProjCoordSys.txt into directory")
+    message("Template ProjCoordSys.txt already exists !")
   }
   # import VertCoordSys
   value <- file.copy(from = "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Templates_Spatial_Data/VertCoordSys.txt", to = paste0(path, "/VertCoordSys.txt"))
@@ -85,34 +74,36 @@ template_spatial_reference <- function(
   if (isTRUE(value)){
     message("VertCoordSys.txt is now in path")
   } else {
-    message("Was not able to copy VertCoordSys.txt into directory")
+    message("Template VertCoordSys.txt already exists !")
   }
   
   # import GeogDescription
   value <- file.copy(from = "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Templates_Spatial_Data/GeogDescription.txt", to = paste0(path, "/VertCoordSys.txt"))
   #   Send message
   if (isTRUE(value)){
-    message("GeogDescription is now in path")
+    message("GeogDescription.txt is now in path")
   } else {
-    message("Was not able to copy GeogDescription into directory")
+    message("Template GeogDescription.txt already exists !")
   }
   
   #### fill in templates ----------------------------------------------
   #   read metadata of Coordinate Reference System of spatial file 
   
-  if (data.type == "raster"){
-    spatial_file <- raster::raster(data.path)
+  data.path <- paste0(folder.path, "/", file.name)
+  
+  if (spatial.type == "raster"){
+    suppressWarnings(spatial_file <- raster::raster(data.path))
     raster_crs <- raster@crs
-    wkt <- rgdal::showSRID(CRSargs(raster_crs))
+    wkt <- rgdal::showSRID(rgdal::CRSargs(raster_crs))
   }
-  else if (data.type == "vector"){
+  else if (spatial.type == "vector"){
     spatial_file <- sf::st_read(data.path)
     wkt <- sf::st_crs(spatial_file)$wkt
   }
   
   #   extract metadata from wkt
   #   TODO: validate each info ??
-  #   IDEA: stocker toutes les infos dans des attributs ??
+  #   IDEA: store every info as an attribute ??
   
   # ***GeoCoordSys***
   #     Name
@@ -177,7 +168,7 @@ template_spatial_reference <- function(
                      row.name= FALSE,
                      quote = FALSE,
                      fileEncoding = "UTF-8")
-  message("GeogCoordSys.txt has been drafted. Please check for errors")
+  message("GeogCoordSys.txt has been drafted. Please check for errors.")
   
   # ***ProjCoordSys***
   #     Name
@@ -232,7 +223,7 @@ template_spatial_reference <- function(
     
     # fill in templates
     projCoordSys <- as.data.frame(list("ProjectionName"=projCoordSysName,"ParameterName" = parameters, "ParameterDescription" = c("!Please describe parameter!"), "ParameterValue"= value, "Unit" = parameterUnit ))
-    projCoordSys <-  unname(projCoordSys)
+    projCoordSys <- unname(projCoordSys)
     utils::write.table(x = projCoordSys,
                        file = paste0(path,"/ProjCoordSys.txt"),
                        append = TRUE,
@@ -245,7 +236,17 @@ template_spatial_reference <- function(
   #Don't know yet where to find altitudeSysDef and DepthSysDef
 }
 
-  
+#test Vector
+path4 <- "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG/Tests_template_spatial_reference/TEST4/Templates"
+folder.path4 <- "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG/Tests_template_spatial_reference/TEST4/Data"
+name4 <-  "WB_Adm0_boundary_lines_10m_lowres.geojson"
+template_spatial_reference(path = path4, folder.path = data.path4, file.name = name4, spatial.type = "vector")
+
+#test raster
+path <- "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG/Netcdf"
+folde <- "C:/Users/jhmsl/Desktop/Stage Concarneau/Spatial_data/Données SIG/Netcdf"
+name <- "dataset-ibi-reanalysis-bio-005-003-monthly-regulargrid_1510914389133.nc"
+template_spatial_reference(path = path, folder.path = folde, file.name = name, spatial.type = "raster")
 
 
 make_spatial_vector <- function(
